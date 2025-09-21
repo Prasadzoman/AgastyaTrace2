@@ -75,7 +75,7 @@ const Processing = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/processing", {
+      const res = await fetch("https://agastyatrace2.onrender.com/processing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
