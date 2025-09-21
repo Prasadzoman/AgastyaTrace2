@@ -12,7 +12,7 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/me", {
+        const res = await fetch("https://agastyatrace2.onrender.com/me", {
           credentials: "include", // send cookies
         });
         if (res.ok) {
