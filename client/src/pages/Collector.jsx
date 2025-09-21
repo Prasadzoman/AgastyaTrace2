@@ -74,7 +74,7 @@ const Collector = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/collector", {
+      const res = await fetch("https://agastyatrace2.onrender.com/collector", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
