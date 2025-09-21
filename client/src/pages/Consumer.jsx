@@ -46,7 +46,7 @@ const Consumer = () => {
   const fetchChainInfo = async (batchId) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/trace/product-batch/${batchId}`, {
+      const res = await fetch(`https://agastyatrace2.onrender.com/trace/product-batch/${batchId}`, {
         method: "GET",
         credentials: "include",
       });
