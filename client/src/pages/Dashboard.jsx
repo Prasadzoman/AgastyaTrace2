@@ -37,7 +37,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5000/chains");
+        const res = await fetch("https://agastyatrace2.onrender.com/chains");
         const data = await res.json();
         setChains(data);
       } catch (err) {
