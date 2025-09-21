@@ -70,7 +70,7 @@ const Transport = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/transport", {
+      const res = await fetch("https://agastyatrace2.onrender.com/transport", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
