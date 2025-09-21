@@ -11,7 +11,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("http://localhost:5000/me", {
+        const res = await fetch("https://agastyatrace2.onrender.com/me", {
           credentials: "include",
         });
         if (res.ok) {
@@ -34,7 +34,7 @@ const Profile = () => {
   // Logout handler
   const handleLogout = async () => {
     try {
-      const res = await fetch("http://localhost:5000/logout", {
+      const res = await fetch("https://agastyatrace2.onrender.com/logout", {
         method: "POST",
         credentials: "include",
       });
