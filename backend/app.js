@@ -19,7 +19,7 @@ app.set('trust proxy', 1);
 // ------------------ MIDDLEWARE ------------------
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://agastyatrace-client.onrender.com",
     credentials: true,
   })
 );
