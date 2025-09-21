@@ -13,7 +13,7 @@ const Signin = () => {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch("http://localhost:5000/signup", {
+      const res = await fetch("https://agastyatrace2.onrender.com/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
