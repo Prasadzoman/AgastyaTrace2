@@ -31,7 +31,7 @@ const ChainDetails = () => {
   useEffect(() => {
     const fetchChain = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/chains/${id}`, {
+        const res = await fetch(`https://agastyatrace2.onrender.com/chains/${id}`, {
           credentials: "include",
         });
         
