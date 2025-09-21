@@ -90,7 +90,7 @@ const Lab = () => {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/labtesting", {
+      const res = await fetch("https://agastyatrace2.onrender.com/labtesting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
