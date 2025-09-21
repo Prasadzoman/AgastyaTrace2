@@ -16,7 +16,7 @@ const Manufacturer = () => {
 
     const fetchLabBatches = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/lab-batches", {
+        const res = await fetch("https://agastyatrace2.onrender.com/api/lab-batches", {
           credentials: "include",
         });
         if (res.ok) {
@@ -49,7 +49,7 @@ const Manufacturer = () => {
 
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/api/product-batch", {
+      const res = await fetch("https://agastyatrace2.onrender.com/api/product-batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
