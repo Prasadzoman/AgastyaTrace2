@@ -9,6 +9,9 @@ import Consumer from "./pages/Consumer";
 import Login from "./pages/Login";
 import Signin from "./pages/Signin";
 import Profile from "./pages/Profile";
+import Dashboard from "./pages/Dashboard";
+import ChainDetails from "./pages/ChainDetails";
+import Manufacturer from "./pages/Manufacturer";
 
 function App() {
   return (
@@ -25,6 +28,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/Dashboard" element={<Dashboard />} /> 
+          <Route path="/chains/:id" element={<ChainDetails />} />
+          <Route path="/manufacturer" element={<Manufacturer />} />        
         </Routes>
       </div>
     </Router>

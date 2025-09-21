@@ -1,4 +1,6 @@
-require("dotenv").config();
+if (process.env.NODE_ENV !== "production") {
+    require('dotenv').config();
+}
 const express = require("express");
 const mongoose = require("mongoose");
 const session = require("express-session");
@@ -10,10 +12,10 @@ const Transport = require("./model/transporter");
 const Processing = require("./model/processing");
 const LabTesting = require("./model/lab");
 const QRCode = require("qrcode");
-
+const ProductBatch=require("./model/ProductBatch")
 const app = express();
 const cors = require("cors");
-
+app.set('trust proxy', 1);
 // ------------------ MIDDLEWARE ------------------
 app.use(
   cors({
@@ -131,6 +133,8 @@ app.post("/collector", async (req, res) => {
 });
 
 // Transport submission
+
+// ---------------- TRANSPORT ----------------
 app.post("/transport", async (req, res) => {
   try {
     if (!req.isAuthenticated())
@@ -141,12 +145,55 @@ app.post("/transport", async (req, res) => {
       transporter: req.user._id, // logged-in transporter
     });
 
-    res.status(201).json({ message: "Transport recorded", transport });
+    // Generate QR for the collector ID
+    const collectorId = req.body.collectorId; // make sure collectorId is sent in body
+    const qrCodeURL = await QRCode.toDataURL(collectorId);
+
+    res.status(201).json({
+      message: "Transport recorded",
+      transport,
+      qrCodeURL,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
+// ---------------- PROCESSING ----------------
+app.post("/processing", async (req, res) => {
+  try {
+    if (!req.isAuthenticated())
+      return res.status(401).json({ message: "Not authenticated" });
+
+    const { collectorId, receivedQuantityKg, processedQuantityKg, processingType, location } = req.body;
+
+    if (!collectorId || !receivedQuantityKg || !processedQuantityKg || !processingType || !location?.lat || !location?.lng)
+      return res.status(400).json({ message: "All required fields must be provided" });
+
+    const processing = await Processing.create({
+      collectorId,
+      processor: req.user._id, // logged-in processor
+      receivedQuantityKg,
+      processedQuantityKg,
+      processingType,
+      location,
+    });
+
+    // Generate QR for the collector ID
+    const qrCodeURL = await QRCode.toDataURL(collectorId);
+
+    res.status(201).json({
+      message: "Processing recorded",
+      processing,
+      qrCodeURL,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 
 // Processing submission
 app.post("/processing", async (req, res) => {
@@ -168,13 +215,19 @@ app.post("/processing", async (req, res) => {
       location,
     });
 
-    res.status(201).json({ message: "Processing recorded", processing });
+    // Generate QR for the collector ID
+    const qrCodeURL = await QRCode.toDataURL(collectorId);
+
+    res.status(201).json({
+      message: "Processing recorded",
+      processing,
+      qrCodeURL,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-
 // Lab Testing submission
 app.post("/labtesting", async (req, res) => {
   try {
@@ -250,6 +303,189 @@ app.get("/trace/lab/:id", async (req, res) => {
   }
 });
 
+/*imp-----------------------------------------------------------------------------------------*/
+app.get("/trace/product-batch/:batchId", async (req, res) => {
+  try {
+    const batchId = req.params.batchId;
+
+    // 1. Find ProductBatch
+    const batch = await ProductBatch.findById(batchId)
+      .populate("manufacturerId", "username email")
+      .populate({
+        path: "labTests",
+        populate: { path: "labTechnician", select: "username email" },
+      })
+      .lean();
+
+    if (!batch) return res.status(404).json({ message: "Product batch not found" });
+
+    // 2. Get collectors from labTests
+    let collectorIds = batch.labTests.map(lab => lab.collectorId);
+    collectorIds = [...new Set(collectorIds.map(id => id.toString()))]; // unique
+
+    const collectors = await Collector.find({ _id: { $in: collectorIds } })
+      .populate("userId", "username email")
+      .lean();
+
+    // 3. Get transport linked to those collectors
+    const transport = await Transport.find({ collectorId: { $in: collectorIds } })
+      .populate("transporter", "username email")
+      .lean();
+
+    // 4. Get processing linked to those collectors
+    const processing = await Processing.find({ collectorId: { $in: collectorIds } })
+      .populate("processor", "username email")
+      .lean();
+
+    // 5. Return everything
+    res.json({
+      productBatch: batch,
+      collectors,
+      transport,
+      processing,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+
+// GET /dashboard - fetch all chains
+// ------------------ GET /chains ------------------
+// Returns all chains with their stages in a single array
+app.get("/chains", async (req, res) => {
+  try {
+    // Fetch everything
+    const collectors = await Collector.find().populate("userId", "username");
+    const transports = await Transport.find().populate("transporter", "username");
+    const processings = await Processing.find().populate("processor", "username");
+    const labs = await LabTesting.find().populate("labTechnician", "username");
+
+    // Build chain array
+    const chains = collectors.map((collector) => {
+      const chainId = collector._id.toString();
+
+      const transportStage = transports.filter(
+        (t) => t.collectorId?.toString() === chainId
+      );
+      const processingStage = processings.find(
+        (p) => p.collectorId?.toString() === chainId
+      );
+      const labStage = labs.find(
+        (l) => l.collectorId?.toString() === chainId
+      );
+
+      return {
+        _id: collector._id,
+        collector,
+        transport: transportStage,
+        processing: processingStage || null,
+        lab: labStage || null,
+        completed: Boolean(processingStage && labStage),
+      };
+    });
+
+    res.json(chains);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Trace full chain by Collector or Lab ID
+app.get("/chains/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Try finding a Lab first
+    let lab = await LabTesting.findById(id).populate("labTechnician", "username");
+    let collectorId;
+
+    if (lab) {
+      collectorId = lab.collectorId;
+    } else {
+      // If not a lab ID, treat it as a collector ID
+      collectorId = id;
+      lab = await LabTesting.findOne({ collectorId }).populate("labTechnician", "username");
+    }
+
+    const collector = await Collector.findById(collectorId).populate("userId", "username");
+    if (!collector) return res.status(404).json({ message: "Collector not found" });
+
+    const transport = await Transport.find({ collectorId }).populate("transporter", "username");
+    const processing = await Processing.findOne({ collectorId }).populate("processor", "username");
+
+    res.json({ collector, transport, processing, lab });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Express.js example
+app.get("/api/lab-batches", async (req, res) => {
+  try {
+    // Get all lab-tested batches
+    const labBatches = await LabTesting.find({}).populate("collectorId").sort({ timestamp: -1 }); 
+
+    // Map to return only required info
+    const batches = labBatches.map(batch => ({
+      _id: batch._id,
+      labTestId: batch._id, // or any other ID you want to expose
+      collectorId: batch.collectorId,
+      testedQuantityKg: batch.testedQuantityKg,
+      testType: batch.testType,
+      result: batch.result,
+      createdAt: batch.timestamp,
+    }));
+
+    res.json({ batches });
+  } catch (err) {
+    console.error("Error fetching lab batches:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
+
+
+// POST /api/product-batch
+app.post("/api/product-batch", async (req, res) => {
+  try {
+    const { batchIds, productName, manufacturerId } = req.body;
+
+    if (!batchIds || batchIds.length === 0) {
+      return res.status(400).json({ error: "Select at least one batch" });
+    }
+
+    // Use LabTesting instead of Batch
+    const labBatches = await LabTesting.find({ _id: { $in: batchIds } });
+    if (labBatches.length !== batchIds.length) {
+      return res.status(400).json({ error: "Some batches are invalid" });
+    }
+
+    // Create product batch
+    const productBatch = await ProductBatch.create({
+      productName,
+      labTests: batchIds,       // store selected LabTesting IDs
+      manufacturerId,
+      quantity: labBatches.reduce((sum, b) => sum + b.testedQuantityKg, 0),
+      weightPerProduct: 1,      // optional, can calculate based on logic
+      location: "Default Location", // optional, add real data if needed
+    });
+
+    // Generate QR code containing manufacturerId
+    const qrData = JSON.stringify({ productBatchId: productBatch._id, manufacturerId });
+    const qrCodeUrl = await QRCode.toDataURL(qrData);
+
+    res.json({ productBatch, qrCodeUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // ------------------ START SERVER ------------------
 app.listen(5000, () => console.log("Server running on port 5000"));
