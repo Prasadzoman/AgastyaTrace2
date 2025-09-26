@@ -225,6 +225,7 @@ const Consumer = () => {
                   <p><strong>Manufacturer:</strong> {chainInfo.productBatch?.manufacturerId?.username}</p>
                 </div>
                 <div className="space-y-2">
+                  <p><strong>Veda Used:</strong> {chainInfo.productBatch?.vedaUsed}</p>
                   <p><strong>Location:</strong> {chainInfo.productBatch?.location}</p>
                   <p><strong>Created:</strong> {formatDate(chainInfo.productBatch?.createdAt)}</p>
                   <p><strong>Last Updated:</strong> {formatDate(chainInfo.productBatch?.updatedAt)}</p>
@@ -248,6 +249,7 @@ const Consumer = () => {
                           <p><strong>Species:</strong> {collector.species}</p>
                           <p><strong>Quantity:</strong> {collector.quantity}kg</p>
                           <p><strong>Farming Type:</strong> {collector.farmingType}</p>
+                          <p><strong>Part used:</strong> {collector.plantPart}</p>
                         </div>
                         <div className="space-y-2">
                           <p><strong>Temperature:</strong> {collector.sensors?.temperature}°C</p>

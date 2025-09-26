@@ -1,5 +1,6 @@
 // src/App.js
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import React, { useContext } from "react";
 import Navbar from "./components/Navbar";
 import Collector from "./pages/Collector";
 import Transport from "./pages/Transport";
@@ -12,25 +13,36 @@ import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
 import ChainDetails from "./pages/ChainDetails";
 import Manufacturer from "./pages/Manufacturer";
+import { UserContext } from "./context/UserContext";
 
 function App() {
+  const { user, loading } = useContext(UserContext);
+
+  if (loading) return <div>Loading...</div>; // show while fetching user
+
   return (
     <Router>
-      <Navbar />
+      {user && <Navbar />} {/* show navbar only if logged in */}
       <div className="p-4">
         <Routes>
-          <Route path="/" element={<Collector />} />
-          <Route path="/collector" element={<Collector />} />
-          <Route path="/transport" element={<Transport />} />
-          <Route path="/processing" element={<Processing />} />
-          <Route path="/lab" element={<Lab />} />
-          <Route path="/consumer" element={<Consumer />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signin" element={<Signin />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/Dashboard" element={<Dashboard />} /> 
-          <Route path="/chains/:id" element={<ChainDetails />} />
-          <Route path="/manufacturer" element={<Manufacturer />} />        
+          {/* Public routes */}
+          <Route path="/login" element={user ? <Navigate to="/collector" /> : <Login />} />
+          <Route path="/signin" element={user ? <Navigate to="/collector" /> : <Signin />} />
+
+          {/* Protected routes */}
+          <Route path="/" element={user ? <Collector /> : <Navigate to="/login" />} />
+          <Route path="/collector" element={user ? <Collector /> : <Navigate to="/login" />} />
+          <Route path="/transport" element={user ? <Transport /> : <Navigate to="/login" />} />
+          <Route path="/processing" element={user ? <Processing /> : <Navigate to="/login" />} />
+          <Route path="/lab" element={user ? <Lab /> : <Navigate to="/login" />} />
+          <Route path="/consumer" element={user ? <Consumer /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/chains/:id" element={user ? <ChainDetails /> : <Navigate to="/login" />} />
+          <Route path="/manufacturer" element={user ? <Manufacturer /> : <Navigate to="/login" />} />
+
+          {/* fallback */}
+          <Route path="*" element={<Navigate to={user ? "/collector" : "/login"} />} />
         </Routes>
       </div>
     </Router>

@@ -46,6 +46,7 @@ app.use(
   })
 );
 
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -328,8 +329,9 @@ app.get("/trace/product-batch/:batchId", async (req, res) => {
     collectorIds = [...new Set(collectorIds.map(id => id.toString()))]; // unique
 
     const collectors = await Collector.find({ _id: { $in: collectorIds } })
-      .populate("userId", "username email")
-      .lean();
+  .populate("userId", "username email")
+  .select("species quantity farmingType location sensors timestamp plantPart userId") // include plantPart
+  .lean();
 
     // 3. Get transport linked to those collectors
     const transport = await Transport.find({ collectorId: { $in: collectorIds } })
@@ -458,13 +460,17 @@ app.get("/api/lab-batches", async (req, res) => {
 // POST /api/product-batch
 app.post("/api/product-batch", async (req, res) => {
   try {
-    const { batchIds, productName, manufacturerId } = req.body;
+    const { batchIds, productName, manufacturerId, quantity, weightPerProduct, location, vedaUsed } = req.body;
 
     if (!batchIds || batchIds.length === 0) {
       return res.status(400).json({ error: "Select at least one batch" });
     }
 
-    // Use LabTesting instead of Batch
+    if (!vedaUsed) {
+      return res.status(400).json({ error: "Select veda used" });
+    }
+
+    // Validate lab batches
     const labBatches = await LabTesting.find({ _id: { $in: batchIds } });
     if (labBatches.length !== batchIds.length) {
       return res.status(400).json({ error: "Some batches are invalid" });
@@ -473,15 +479,16 @@ app.post("/api/product-batch", async (req, res) => {
     // Create product batch
     const productBatch = await ProductBatch.create({
       productName,
-      labTests: batchIds,       // store selected LabTesting IDs
+      labTests: batchIds, // store selected LabTesting IDs
       manufacturerId,
-      quantity: labBatches.reduce((sum, b) => sum + b.testedQuantityKg, 0),
-      weightPerProduct: 1,      // optional, can calculate based on logic
-      location: "Default Location", // optional, add real data if needed
+      quantity: quantity || labBatches.reduce((sum, b) => sum + b.testedQuantityKg, 0),
+      weightPerProduct: weightPerProduct || 1,
+      location: location || "Default Location",
+      vedaUsed, // <-- NEW field added
     });
 
     // Generate QR code containing manufacturerId
-    const qrData = JSON.stringify({ productBatchId: productBatch._id, manufacturerId });
+    const qrData = JSON.stringify({ productBatchId: productBatch._id, manufacturerId});
     const qrCodeUrl = await QRCode.toDataURL(qrData);
 
     res.json({ productBatch, qrCodeUrl });
@@ -490,6 +497,7 @@ app.post("/api/product-batch", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // ------------------ START SERVER ------------------
 app.listen(5000, () => console.log("Server running on port 5000"));

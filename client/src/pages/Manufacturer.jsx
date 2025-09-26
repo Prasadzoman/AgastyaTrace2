@@ -8,6 +8,7 @@ const Manufacturer = () => {
   const [productName, setProductName] = useState("");
   const [quantity, setQuantity] = useState(0);
   const [weightPerProduct, setWeightPerProduct] = useState(0);
+  const [vedaUsed, setVedaUsed] = useState(""); // ✅ new state
   const [qrCode, setQrCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -42,8 +43,8 @@ const Manufacturer = () => {
       alert("Please login first");
       return;
     }
-    if (!productName || selectedBatches.length === 0) {
-      alert("Enter product name and select at least one batch");
+    if (!productName || selectedBatches.length === 0 || !vedaUsed) {
+      alert("Enter product name, select at least one batch, and choose a Veda");
       return;
     }
 
@@ -58,6 +59,7 @@ const Manufacturer = () => {
           manufacturerId: user._id,
           quantity,
           weightPerProduct,
+          vedaUsed, // ✅ send vedaUsed to backend
           location: "Factory/Plant location", // replace with actual if needed
         }),
         credentials: "include",
@@ -71,6 +73,7 @@ const Manufacturer = () => {
         setProductName("");
         setQuantity(0);
         setWeightPerProduct(0);
+        setVedaUsed(""); // ✅ reset
       } else {
         alert(data.error);
       }
@@ -89,6 +92,7 @@ const Manufacturer = () => {
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6">
         <h1 className="text-2xl font-bold mb-4">Create Product Batch</h1>
 
+        {/* Product Name */}
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-2">Product Name</label>
           <input
@@ -99,6 +103,7 @@ const Manufacturer = () => {
           />
         </div>
 
+        {/* Quantity + Weight */}
         <div className="mb-4 grid grid-cols-2 gap-2">
           <div>
             <label className="block text-gray-700 font-medium mb-2">Quantity</label>
@@ -122,6 +127,24 @@ const Manufacturer = () => {
           </div>
         </div>
 
+        {/* ✅ Veda Used Dropdown */}
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-2">Veda Used</label>
+          <select
+            value={vedaUsed}
+            onChange={(e) => setVedaUsed(e.target.value)}
+            className="w-full border rounded-lg px-4 py-2"
+            required
+          >
+            <option value="">Select Veda</option>
+            <option value="Rig Veda">Rig Veda</option>
+            <option value="Sama Veda">Sama Veda</option>
+            <option value="Yajur Veda">Yajur Veda</option>
+            <option value="Atharva Veda">Atharva Veda</option>
+          </select>
+        </div>
+
+        {/* Lab Batches */}
         <h2 className="text-lg font-semibold mb-2">Select Lab-Tested Batches</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto mb-4">
           {labBatches.map((batch) => (
@@ -148,6 +171,7 @@ const Manufacturer = () => {
           ))}
         </div>
 
+        {/* Submit */}
         <button
           onClick={handleCreateProductBatch}
           disabled={loading}
@@ -156,6 +180,7 @@ const Manufacturer = () => {
           {loading ? "Creating..." : "Create Product Batch & Generate QR"}
         </button>
 
+        {/* QR Code */}
         {qrCode && (
           <div className="mt-6 text-center">
             <h3 className="text-lg font-semibold mb-2">Product Batch QR Code</h3>

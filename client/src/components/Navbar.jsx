@@ -1,23 +1,45 @@
 // src/components/Navbar.jsx
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { UserContext } from "../context/UserContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation(); // to highlight active link
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, setUser } = useContext(UserContext);
 
-  const navLinks = [
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+
+  // Links depending on auth
+  const authLinks = [
     { name: "Collector", path: "/collector" },
     { name: "Transport", path: "/transport" },
     { name: "Processing", path: "/processing" },
     { name: "Lab", path: "/lab" },
     { name: "Consumer", path: "/consumer" },
-    { name: "Login", path: "/login" },
-    { name: "Sign In", path: "/signin" },
     { name: "Profile", path: "/profile" },
     { name: "Dashboard", path: "/dashboard" },
-    { name: "Manufcturer", path: "/manufacturer" },
+    { name: "Manufacturer", path: "/manufacturer" },
   ];
+
+  const guestLinks = [
+    { name: "Login", path: "/login" },
+    { name: "Sign In", path: "/signin" },
+  ];
+
+  const linksToShow = user ? authLinks : guestLinks;
 
   return (
     <nav className="bg-blue-500 text-white p-4 shadow-md sticky top-0 z-50">
@@ -63,7 +85,7 @@ const Navbar = () => {
           }`}
         >
           <div className="flex flex-col md:flex-row md:gap-4 mt-4 md:mt-0">
-            {navLinks.map((link) => (
+            {linksToShow.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
@@ -76,6 +98,16 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+
+            {/* Logout button for authenticated users */}
+            {user && (
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
       </div>
