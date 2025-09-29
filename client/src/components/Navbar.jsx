@@ -28,10 +28,10 @@ const Navbar = () => {
     { name: "Transport", path: "/transport" },
     { name: "Processing", path: "/processing" },
     { name: "Lab", path: "/lab" },
+    { name: "Manufacturer", path: "/manufacturer" },
     { name: "Consumer", path: "/consumer" },
     { name: "Profile", path: "/profile" },
     { name: "Dashboard", path: "/dashboard" },
-    { name: "Manufacturer", path: "/manufacturer" },
   ];
 
   const guestLinks = [
